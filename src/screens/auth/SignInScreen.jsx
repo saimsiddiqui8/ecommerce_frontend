@@ -3,6 +3,8 @@ import { FormGridWrapper, FormTitle } from "../../styles/form_grid";
 import { Container } from "../../styles/styles";
 import { staticImages } from "../../utils/images";
 import AuthOptions from "../../components/auth/AuthOptions";
+import { Formik, Form, Field, ErrorMessage } from 'formik';
+import * as Yup from 'yup';
 import { FormElement, Input } from "../../styles/form";
 import PasswordInput from "../../components/auth/PasswordInput";
 import { Link } from "react-router-dom";
@@ -39,62 +41,90 @@ const SignInScreenWrapper = styled.section`
   }
 `;
 
+// Define validation schema using Yup
+const validationSchema = Yup.object().shape({
+  usernameOrEmail: Yup.string().required('Username or email is required'),
+  password: Yup.string().required('Password is required'),
+});
+
 const SignInScreen = () => {
+
+  const handleSubmit = async (values, { setSubmitting, setErrors }) => {
+    try {
+      const response = await fetch('login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+      if (response.ok) {
+        // Login successful, handle accordingly (e.g., redirect to dashboard)
+        console.log('Login successful');
+      } else {
+        // Login failed, handle error (e.g., display error message)
+        const data = await response.json();
+        setErrors({ general: data.message }); // Assuming the API returns error message in a field named "message"
+      }
+    } catch (error) {
+      console.error('Error occurred:', error);
+      // Handle error
+    } finally {
+      setSubmitting(false);
+    }
+  };
   return (
     <SignInScreenWrapper>
-      <FormGridWrapper>
-        <Container>
-          <div className="form-grid-content">
-            <div className="form-grid-left">
-              <img src={staticImages.form_img1} className="object-fit-cover" />
-            </div>
-            <div className="form-grid-right">
-              <FormTitle>
-                <h3>Sign In</h3>
-              </FormTitle>
-              <AuthOptions />
-              <div className="form-separator flex items-center justify-center">
-                <span className="separator-line"></span>
-                <span className="separator-text inline-flex items-center justify-center text-white">
-                  OR
-                </span>
-                <span className="separator-line"></span>
-              </div>
+      <Formik
+        initialValues={{ usernameOrEmail: '', password: '' }}
+        validationSchema={validationSchema}
+        onSubmit={handleSubmit}
+      >
+        {({ isSubmitting }) => (
+          <Form>
+            <FormElement>
+              <label htmlFor="usernameOrEmail" className="form-elem-label">
+                User name or email address
+              </label>
+              <Field
+                type="text"
+                name="usernameOrEmail"
+                className="form-elem-control"
+              />
+              <ErrorMessage name="usernameOrEmail" component="div" className="error" />
+            </FormElement>
 
-              <form>
-                <FormElement>
-                  <label htmlFor="" className="form-elem-label">
-                    User name or email address
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder=""
-                    name=""
-                    className="form-elem-control"
-                  />
-                </FormElement>
-                <PasswordInput fieldName="Password" name="password" />
-                <Link
-                  to="/reset"
-                  className="form-elem-text text-end font-medium"
-                >
-                  Forgot your password?
-                </Link>
-                <BaseButtonBlack type="submit" className="form-submit-btn">
-                  Sign In
-                </BaseButtonBlack>
-              </form>
-              <p className="flex flex-wrap account-rel-text">
-                Don&apos;t have a account?
-                <Link to="/sign_up" className="font-medium">
-                  Sign Up
-                </Link>
-                `
-              </p>
-            </div>
-          </div>
-        </Container>
-      </FormGridWrapper>
+            <FormElement>
+              <label htmlFor="password" className="form-elem-label">
+                Password
+              </label>
+              <Field
+                type="password"
+                name="password"
+                className="form-elem-control"
+              />
+              <ErrorMessage name="password" component="div" className="error" />
+            </FormElement>
+
+            <Link to="/reset" className="form-elem-text text-end font-medium">
+              Forgot your password?
+            </Link>
+
+            <BaseButtonBlack type="submit" disabled={isSubmitting} className="form-submit-btn">
+              {isSubmitting ? 'Signing in...' : 'Sign In'}
+            </BaseButtonBlack>
+
+            <ErrorMessage name="general" component="div" className="error" />
+
+            <p className="flex flex-wrap account-rel-text">
+              Don&apos;t have an account?{' '}
+              <Link to="/sign_up" className="font-medium">
+                Sign Up
+              </Link>
+            </p>
+          </Form>
+        )}
+      </Formik>
     </SignInScreenWrapper>
   );
 };
